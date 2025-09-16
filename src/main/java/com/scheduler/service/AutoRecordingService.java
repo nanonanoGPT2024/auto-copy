@@ -48,6 +48,8 @@ public class AutoRecordingService {
 
     File folderTahun = new File(sourcePath);
 
+    String DestCopy = destinationPath;
+
     File[] listOfTahun = folderTahun.listFiles();
 
     List<String> ListHp = new ArrayList<>();
@@ -64,13 +66,15 @@ public class AutoRecordingService {
       for (File fileTahun : listOfTahun) {
 
         if (fileTahun.getName().equals("2025")) {
+          DestCopy += "/" + fileTahun.getName();
           File folderBulan = new File(fileTahun.getAbsolutePath());
           File[] listOfBulan = folderBulan.listFiles();
 
           // looping folder bulan
           if (listOfBulan != null) {
-            for (File fileBulan : listOfBulan) {
 
+            for (File fileBulan : listOfBulan) {
+              DestCopy += "/" + fileBulan.getName();
               System.out.println("cek bulan : " + fileBulan);
 
               File folderTanggal = new File(fileBulan.getAbsolutePath());
@@ -79,24 +83,24 @@ public class AutoRecordingService {
 
                 // looping folder tanggal
                 for (File fileTanggal : listOfTanggal) {
+                  DestCopy += "/" + fileTanggal.getName();
                   File listOfFile = new File(fileTanggal.getAbsolutePath());
                   File[] folderFile = listOfFile.listFiles();
 
-                  File newPath = new File(fileTanggal.getAbsolutePath().replace("monitor", "monitor_new"));
+                  File newPath = new File(DestCopy);
 
                   // looping file
                   if (folderFile != null) {
                     for (File file : folderFile) {
-                      for (String noHp : ListHp) {  
+                      for (String noHp : ListHp) {
                         if (file.isFile() && file.getName().contains(noHp)) {
-                          System.out.println("ada");
                           if (!newPath.exists()) {
                             newPath.mkdirs();
                           }
                           try {
                             Files.copy(
                                 Paths.get(fileTanggal.getAbsolutePath()).resolve(file.getName()),
-                                Paths.get(newPath.getAbsolutePath()).resolve(file.getName()),
+                                Paths.get(DestCopy),
                                 StandardCopyOption.REPLACE_EXISTING);
                           } catch (Exception e) {
                             System.out.println(e.getMessage());
@@ -109,6 +113,7 @@ public class AutoRecordingService {
                   }
 
                 }
+                DestCopy = destinationPath;
               }
             }
           }
