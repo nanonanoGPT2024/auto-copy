@@ -7,7 +7,6 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SchedulerApplication {
     public static void main(String[] args) {
         SpringApplication app = new SpringApplication(SchedulerApplication.class);
-        // app.setAdditionalProfiles("dev"); // aktifkan profile dev
         app.run(args);
     }
 }

@@ -47,10 +47,9 @@ public class AutoRecordingService {
   public void startCopy() {
 
     File folderTahun = new File(sourcePath);
-    System.out.println("total file : " + folderTahun);
+
     File[] listOfTahun = folderTahun.listFiles();
 
-    // List<String> ListHp = userRepository.findPhoneNumbers();
     List<String> ListHp = new ArrayList<>();
     try {
       ListHp = CsvUtils.readCsvFile(pathFile);
@@ -80,22 +79,17 @@ public class AutoRecordingService {
 
                 // looping folder tanggal
                 for (File fileTanggal : listOfTanggal) {
-                  System.out.println("cek tanggal : " + fileTanggal);
-
                   File listOfFile = new File(fileTanggal.getAbsolutePath());
                   File[] folderFile = listOfFile.listFiles();
 
                   File newPath = new File(fileTanggal.getAbsolutePath().replace("monitor", "monitor_new"));
-                  System.out.println("cek folder exist : " + newPath + " =  " + newPath.exists());
 
                   // looping file
                   if (folderFile != null) {
                     for (File file : folderFile) {
-                      System.out.println("cek file : " + file);
-
-                      for (String noHp : ListHp) {
+                      for (String noHp : ListHp) {  
                         if (file.isFile() && file.getName().contains(noHp)) {
-
+                          System.out.println("ada");
                           if (!newPath.exists()) {
                             newPath.mkdirs();
                           }
