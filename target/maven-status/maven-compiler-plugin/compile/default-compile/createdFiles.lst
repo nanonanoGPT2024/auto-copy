@@ -1,0 +1,6 @@
+com\scheduler\service\AutoRecordingService.class
+com\scheduler\utils\CsvUtils.class
+com\scheduler\controller\AutoRecordingController.class
+com\scheduler\utils\SingleThreadTaskQueue.class
+com\scheduler\controller\PhoneController.class
+com\scheduler\SchedulerApplication.class
