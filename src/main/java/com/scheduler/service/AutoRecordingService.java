@@ -75,9 +75,8 @@ public class AutoRecordingService {
             for (File fileBulan : listOfBulan) {
               String bulanName = fileBulan.getName();
               // Hanya proses bulan 01-06
-              if (bulanName.compareTo("01") >= 0 && bulanName.compareTo("06") <= 0) {
+              if (bulanName.compareTo("01") >= 0 && bulanName.compareTo("08") <= 0) {
                 String bulanDestCopy = baseDestCopy + "/" + fileBulan.getName();
-                System.out.println("cek bulan : " + fileBulan.getName());
 
                 File folderTanggal = new File(fileBulan.getAbsolutePath());
                 File[] listOfTanggal = folderTanggal.listFiles();
@@ -85,15 +84,12 @@ public class AutoRecordingService {
 
                   // looping folder tanggal
                   for (File fileTanggal : listOfTanggal) {
-                    // System.out.println("cek folder tanggal : ", fileTanggal.getName());
-                    System.out.println("cek folder tanggal : " + fileTanggal.getName());
                     String currentDestCopy = bulanDestCopy + "/" + fileTanggal.getName();
                     File listOfFile = new File(fileTanggal.getAbsolutePath());
                     File[] folderFile = listOfFile.listFiles();
 
                     // Buat path direktori (tanpa nama file)
                     File newPath = new File(currentDestCopy);
-                    System.out.println("new path : " + currentDestCopy);
 
                     // looping file
                     if (folderFile != null) {

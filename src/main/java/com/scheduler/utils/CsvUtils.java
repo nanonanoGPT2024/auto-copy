@@ -22,7 +22,10 @@ public class CsvUtils {
                         values.add(value);
                     }
                 } else {
-                    values.add(line.replace("\"", ""));
+                    String cleanLine = line.replace("\"", "");
+                    if (cleanLine.length() > 3) {
+                        values.add(cleanLine);
+                    }
                 }
             }
         } catch (IOException e) {
