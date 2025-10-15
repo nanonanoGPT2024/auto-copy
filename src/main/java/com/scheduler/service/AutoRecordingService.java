@@ -5,7 +5,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -66,7 +65,7 @@ public class AutoRecordingService {
       for (File fileTahun : listOfTahun) {
 
         if (fileTahun.getName().equals("2025")) {
-          DestCopy += "/" + fileTahun.getName();
+          String baseDestCopy = DestCopy + "/" + fileTahun.getName();
           File folderBulan = new File(fileTahun.getAbsolutePath());
           File[] listOfBulan = folderBulan.listFiles();
 
@@ -74,46 +73,54 @@ public class AutoRecordingService {
           if (listOfBulan != null) {
 
             for (File fileBulan : listOfBulan) {
-              DestCopy += "/" + fileBulan.getName();
-              System.out.println("cek bulan : " + fileBulan);
+              String bulanName = fileBulan.getName();
+              // Hanya proses bulan 01-06
+              if (bulanName.compareTo("01") >= 0 && bulanName.compareTo("06") <= 0) {
+                String bulanDestCopy = baseDestCopy + "/" + fileBulan.getName();
+                System.out.println("cek bulan : " + fileBulan.getName());
 
-              File folderTanggal = new File(fileBulan.getAbsolutePath());
-              File[] listOfTanggal = folderTanggal.listFiles();
-              if (listOfTanggal != null) {
+                File folderTanggal = new File(fileBulan.getAbsolutePath());
+                File[] listOfTanggal = folderTanggal.listFiles();
+                if (listOfTanggal != null) {
 
-                // looping folder tanggal
-                for (File fileTanggal : listOfTanggal) {
-                  DestCopy += "/" + fileTanggal.getName();
-                  File listOfFile = new File(fileTanggal.getAbsolutePath());
-                  File[] folderFile = listOfFile.listFiles();
+                  // looping folder tanggal
+                  for (File fileTanggal : listOfTanggal) {
+                    // System.out.println("cek folder tanggal : ", fileTanggal.getName());
+                    System.out.println("cek folder tanggal : " + fileTanggal.getName());
+                    String currentDestCopy = bulanDestCopy + "/" + fileTanggal.getName();
+                    File listOfFile = new File(fileTanggal.getAbsolutePath());
+                    File[] folderFile = listOfFile.listFiles();
 
-                  File newPath = new File(DestCopy);
+                    // Buat path direktori (tanpa nama file)
+                    File newPath = new File(currentDestCopy);
+                    System.out.println("new path : " + currentDestCopy);
 
-                  // looping file
-                  if (folderFile != null) {
-                    for (File file : folderFile) {
-                      for (String noHp : ListHp) {
-                        if (file.isFile() && file.getName().contains(noHp)) {
-                          if (!newPath.exists()) {
-                            newPath.mkdirs();
+                    // looping file
+                    if (folderFile != null) {
+                      for (File file : folderFile) {
+                        for (String noHp : ListHp) {
+                          if (file.isFile() && file.getName().contains(noHp)) {
+                            if (!newPath.exists()) {
+                              newPath.mkdirs();
+                            }
+                            try {
+                              // Copy ke direktori dengan nama file asli
+                              Files.copy(
+                                  Paths.get(fileTanggal.getAbsolutePath()).resolve(file.getName()),
+                                  Paths.get(currentDestCopy).resolve(file.getName()),
+                                  StandardCopyOption.REPLACE_EXISTING);
+                            } catch (Exception e) {
+                              System.out.println(e.getMessage());
+                            }
+
+                            break;
                           }
-                          try {
-                            Files.copy(
-                                Paths.get(fileTanggal.getAbsolutePath()).resolve(file.getName()),
-                                Paths.get(DestCopy),
-                                StandardCopyOption.REPLACE_EXISTING);
-                          } catch (Exception e) {
-                            System.out.println(e.getMessage());
-                          }
-
-                          break;
                         }
                       }
                     }
-                  }
 
+                  }
                 }
-                DestCopy = destinationPath;
               }
             }
           }

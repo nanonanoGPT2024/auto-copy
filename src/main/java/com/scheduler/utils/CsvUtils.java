@@ -18,9 +18,11 @@ public class CsvUtils {
                     if (value.startsWith("\"") && value.endsWith("\"")) {
                         value = value.substring(1, value.length() - 1);
                     }
-                    values.add(value);
+                    if (value.length() > 3) {
+                        values.add(value);
+                    }
                 } else {
-                     values.add(line.replace("\"", ""));
+                    values.add(line.replace("\"", ""));
                 }
             }
         } catch (IOException e) {
