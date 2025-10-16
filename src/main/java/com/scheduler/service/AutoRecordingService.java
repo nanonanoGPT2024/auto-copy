@@ -5,8 +5,12 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -30,13 +34,9 @@ public class AutoRecordingService {
   public String importData() {
     Runnable task = () -> {
       try {
-        LocalDateTime now = LocalDateTime.now();
-        System.out.println("Mulai: " + now);
         startCopy();
-        LocalDateTime end = LocalDateTime.now();
-        System.out.println("end: " + end);
       } catch (Exception e) {
-
+        // Silent handling
       }
     };
     taskQueue.submitTask(task);
@@ -44,84 +44,130 @@ public class AutoRecordingService {
   }
 
   public void startCopy() {
+    LocalDateTime startTime = LocalDateTime.now();
+    String formattedStartTime = startTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
 
-    File folderTahun = new File(sourcePath);
-
-    String DestCopy = destinationPath;
-
-    File[] listOfTahun = folderTahun.listFiles();
-
-    List<String> ListHp = new ArrayList<>();
     try {
-      ListHp = CsvUtils.readCsvFile(pathFile);
-      System.out.println("total data csv : " + ListHp.size());
-    } catch (Exception e) {
+      System.out.println("=== PROSES COPY FILE DIMULAI ===");
+      System.out.println("Start Time: " + formattedStartTime);
 
-      System.out.println("error : " + e.getCause());
-    }
+      // Load data CSV langsung menggunakan CsvUtils tanpa optimasi tambahan
+      List<String> rawPhoneData = CsvUtils.readCsvFile(pathFile);
 
-    // looping folder tahun
-    if (listOfTahun != null) {
-      for (File fileTahun : listOfTahun) {
+      // Hitung duplikasi sebelum konversi ke HashSet
+      Set<String> uniquePhoneNumbers = new HashSet<>(rawPhoneData);
 
-        if (fileTahun.getName().equals("2025")) {
-          String baseDestCopy = DestCopy + "/" + fileTahun.getName();
-          File folderBulan = new File(fileTahun.getAbsolutePath());
-          File[] listOfBulan = folderBulan.listFiles();
+      File folderTahun = new File(sourcePath);
+      File[] listOfTahun = folderTahun.listFiles();
 
-          // looping folder bulan
-          if (listOfBulan != null) {
-
-            for (File fileBulan : listOfBulan) {
-              String bulanName = fileBulan.getName();
-              // Hanya proses bulan 01-06
-              if (bulanName.compareTo("01") >= 0 && bulanName.compareTo("08") <= 0) {
-                String bulanDestCopy = baseDestCopy + "/" + fileBulan.getName();
-
-                File folderTanggal = new File(fileBulan.getAbsolutePath());
-                File[] listOfTanggal = folderTanggal.listFiles();
-                if (listOfTanggal != null) {
-
-                  // looping folder tanggal
-                  for (File fileTanggal : listOfTanggal) {
-                    String currentDestCopy = bulanDestCopy + "/" + fileTanggal.getName();
-                    File listOfFile = new File(fileTanggal.getAbsolutePath());
-                    File[] folderFile = listOfFile.listFiles();
-
-                    // Buat path direktori (tanpa nama file)
-                    File newPath = new File(currentDestCopy);
-
-                    // looping file
-                    if (folderFile != null) {
-                      for (File file : folderFile) {
-                        for (String noHp : ListHp) {
-                          if (file.isFile() && file.getName().contains(noHp)) {
-                            if (!newPath.exists()) {
-                              newPath.mkdirs();
-                            }
-                            try {
-                              // Copy ke direktori dengan nama file asli
-                              Files.copy(
-                                  Paths.get(fileTanggal.getAbsolutePath()).resolve(file.getName()),
-                                  Paths.get(currentDestCopy).resolve(file.getName()),
-                                  StandardCopyOption.REPLACE_EXISTING);
-                            } catch (Exception e) {
-                              System.out.println(e.getMessage());
-                            }
-
-                            break;
-                          }
-                        }
-                      }
-                    }
-
-                  }
-                }
-              }
-            }
+      if (listOfTahun != null) {
+        for (File fileTahun : listOfTahun) {
+          if (fileTahun.getName().equals("2025")) {
+            processYearFolder(fileTahun, uniquePhoneNumbers);
           }
         }
       }
+
+      LocalDateTime endTime = LocalDateTime.now();
+      String formattedEndTime = endTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+      System.out.println("End Time: " + formattedEndTime);
+      System.out.println("=== PROSES COPY FILE SELESAI ===");
+
+    } catch (Exception e) {
+      LocalDateTime endTime = LocalDateTime.now();
+      String formattedEndTime = endTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+
+      System.out.println("End Time (Error): " + formattedEndTime);
+      System.out.println("=== PROSES COPY FILE GAGAL ===");
+    }
+  }
+
+  private void processYearFolder(File yearFolder, Set<String> phoneNumbers) {
+    String baseDestCopy = destinationPath + "/" + yearFolder.getName();
+    File[] months = yearFolder.listFiles();
+
+    if (months == null)
+      return;
+
+    // Process months in parallel untuk performa maksimal
+    List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+    for (File monthFolder : months) {
+      String monthName = monthFolder.getName();
+      if (isValidMonth(monthName)) {
+        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+          processMonthFolder(monthFolder, baseDestCopy, phoneNumbers);
+        });
+        futures.add(future);
+      }
+    }
+
+    // Wait for all months to complete
+    CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+  }
+
+  private boolean isValidMonth(String monthName) {
+    // Hanya proses bulan 01-08
+    return monthName.compareTo("01") >= 0 && monthName.compareTo("08") <= 0;
+  }
+
+  private void processMonthFolder(File monthFolder, String baseDestCopy, Set<String> phoneNumbers) {
+    String monthDestCopy = baseDestCopy + "/" + monthFolder.getName();
+    File[] days = monthFolder.listFiles();
+
+    if (days == null)
+      return;
+
+    for (File dayFolder : days) {
+      if (dayFolder.isDirectory()) {
+        processDayFolder(dayFolder, monthDestCopy, phoneNumbers);
+      }
+    }
+  }
+
+  private void processDayFolder(File dayFolder, String monthDestCopy, Set<String> phoneNumbers) {
+    String dayDestCopy = monthDestCopy + "/" + dayFolder.getName();
+    File[] files = dayFolder.listFiles();
+
+    if (files == null)
+      return;
+
+    // Pre-create destination directory
+    File destDir = new File(dayDestCopy);
+    if (!destDir.exists()) {
+      destDir.mkdirs();
+    }
+
+    // Process files dengan optimasi lookup O(1)
+    for (File file : files) {
+      if (file.isFile() && shouldCopyFile(file.getName(), phoneNumbers)) {
+        copyFileToDestination(file, dayFolder, dayDestCopy);
+      }
+    }
+  }
+
+  private boolean shouldCopyFile(String fileName, Set<String> phoneNumbers) {
+    // Extract potential phone numbers dari nama file
+    String[] parts = fileName.split("[^0-9]+");
+    for (String part : parts) {
+      if (part.length() >= 3) {
+        if (phoneNumbers.contains(part)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private void copyFileToDestination(File sourceFile, File sourceDir, String destDir) {
+    try {
+      Files.copy(
+          sourceDir.toPath().resolve(sourceFile.getName()),
+          Paths.get(destDir).resolve(sourceFile.getName()),
+          StandardCopyOption.REPLACE_EXISTING);
+    } catch (Exception e) {
+      // Silent handling
     }
   }
 }
