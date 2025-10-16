@@ -148,13 +148,10 @@ public class AutoRecordingService {
   }
 
   private boolean shouldCopyFile(String fileName, Set<String> phoneNumbers) {
-    // Extract potential phone numbers dari nama file
-    String[] parts = fileName.split("[^0-9]+");
-    for (String part : parts) {
-      if (part.length() >= 3) {
-        if (phoneNumbers.contains(part)) {
-          return true;
-        }
+    // Check if any phone number from the set is contained in the filename
+    for (String phoneNumber : phoneNumbers) {
+      if (fileName.contains(phoneNumber)) {
+        return true;
       }
     }
     return false;
